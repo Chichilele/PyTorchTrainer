@@ -3,19 +3,13 @@ import torch
 class Trainer():
     """Trainer class for Pytorch modules. Implements the training phase.
 
-    If the class has public attributes, they may be documented here
-    in an ``Attributes`` section and follow the same formatting as a
-    function's ``Args`` section. Alternatively, attributes may be documented
-    inline with the attribute's declaration (see __init__ method below).
-
-    Properties created with the ``@property`` decorator should be documented
-    in the property's getter method.
-
     Attributes:
+        net (nn.Module) : neural network to be trained.
         optimizer : optimizer to use for training.
         criterion : loss function.
-        train_loader ()
-        criterion (:obj:`int`, optional): loss function.
+        train_loader : training data loader.
+        test_loader : test data loader.
+        log_interval : interval between each log (both printed and stored for plotting).
 
     """
     def __init__(self, net, optimizer, criterion, train_loader, test_loader, log_interval=100):
@@ -32,6 +26,12 @@ class Trainer():
         self.test_counter = []
 
     def train_step(self, epoch):
+        """Trains one step (epoch) and logs.
+
+        Args:
+            epoch (int): epoch id to be processed (for logging purpose only).
+
+        """        
         self.net.train()
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.cuda(), target.cuda()
@@ -54,9 +54,12 @@ class Trainer():
                 torch.save(self.net.state_dict(), './models/nextjournal_model.pth')
                 torch.save(self.optimizer.state_dict(), './models/nextjournal_self.optimizer.pth')
         
-        return self.net, 
-
     def test(self):
+        """test function evaluating the training set.
+
+        logs results to `test_losses` and prints results.
+
+        """
         self.net.eval()
         test_loss = 0
         correct = 0
@@ -75,6 +78,19 @@ class Trainer():
         print(f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{len(self.test_loader.dataset)} ({accuracy_rate:.0f}%)\n")
 
     def train(self, n_epochs):
+        """Neural network training routine.
+
+        Args:
+            n_epochs (int): number of epochs to trained the network on.
+
+        Returns:
+            nn.Module: pointer to the trained network.
+            dict: dict containing train and test losses.
+
+        .. _PEP 484:
+            https://www.python.org/dev/peps/pep-0484/
+
+        """
         self.test_counter = [i*len(self.train_loader.dataset) for i in range(len(self.test_counter) + n_epochs + 1)]
         self.test()
         for epoch in range(1, n_epochs + 1):

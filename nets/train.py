@@ -1,6 +1,7 @@
 import torch
 
-class Trainer():
+
+class Trainer:
     """Trainer class for Pytorch modules. Implements the training phase.
 
     Attributes:
@@ -12,7 +13,10 @@ class Trainer():
         log_interval : interval between each log (both printed and stored for plotting).
 
     """
-    def __init__(self, net, optimizer, criterion, train_loader, test_loader, log_interval=100):
+
+    def __init__(
+        self, net, optimizer, criterion, train_loader, test_loader, log_interval=100
+    ):
         self.net = net
         self.optimizer = optimizer
         self.criterion = criterion
@@ -31,7 +35,7 @@ class Trainer():
         Args:
             epoch (int): epoch id to be processed (for logging purpose only).
 
-        """        
+        """
         self.net.train()
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.cuda(), target.cuda()
@@ -43,17 +47,23 @@ class Trainer():
             if batch_idx % self.log_interval == 0:
                 img_done = batch_idx * len(data)
                 dataset_size = len(self.train_loader.dataset)
-                percentage_done = 100. * batch_idx / len(self.train_loader)
-                print(f"Train Epoch: {epoch} [{img_done}/{dataset_size} ({percentage_done:.0f}%)]\tLoss: {loss.item():.6f}")
+                percentage_done = 100.0 * batch_idx / len(self.train_loader)
+                print(
+                    f"Train Epoch: {epoch} [{img_done}/{dataset_size} ({percentage_done:.0f}%)]\tLoss: {loss.item():.6f}"
+                )
 
                 self.train_losses.append(loss.item())
                 self.train_counter.append(
-                    (batch_idx*self.train_loader.batch_size) + ((epoch-1)*dataset_size)
+                    (batch_idx * self.train_loader.batch_size)
+                    + ((epoch - 1) * dataset_size)
                 )
                 ## save model
-                torch.save(self.net.state_dict(), './models/nextjournal_model.pth')
-                torch.save(self.optimizer.state_dict(), './models/nextjournal_self.optimizer.pth')
-        
+                torch.save(self.net.state_dict(), "./models/nextjournal_model.pth")
+                torch.save(
+                    self.optimizer.state_dict(),
+                    "./models/nextjournal_self.optimizer.pth",
+                )
+
     def test(self):
         """test function evaluating the training set.
 
@@ -73,9 +83,11 @@ class Trainer():
                 correct += pred.eq(target.data.view_as(pred)).sum()
         test_loss /= len(self.test_loader)
         self.test_losses.append(test_loss)
-        
-        accuracy_rate = 100. * correct / len(self.test_loader.dataset)
-        print(f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{len(self.test_loader.dataset)} ({accuracy_rate:.0f}%)\n")
+
+        accuracy_rate = 100.0 * correct / len(self.test_loader.dataset)
+        print(
+            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{len(self.test_loader.dataset)} ({accuracy_rate:.0f}%)\n"
+        )
 
     def train(self, n_epochs):
         """Neural network training routine.
@@ -91,15 +103,18 @@ class Trainer():
             https://www.python.org/dev/peps/pep-0484/
 
         """
-        self.test_counter = [i*len(self.train_loader.dataset) for i in range(len(self.test_counter) + n_epochs + 1)]
+        self.test_counter = [
+            i * len(self.train_loader.dataset)
+            for i in range(len(self.test_counter) + n_epochs + 1)
+        ]
         self.test()
         for epoch in range(1, n_epochs + 1):
             self.train_step(epoch)
             self.test()
-        
+
         results = {
             "train_loss": (self.train_losses, self.train_counter),
             "test_loss": (self.test_losses, self.test_counter),
         }
-            
+
         return self.net, results

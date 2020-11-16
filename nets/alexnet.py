@@ -23,6 +23,28 @@ class AlexNet(nn.Module):
         self.fc2 = nn.Linear(4096, 4096)
         self.fc3 = nn.Linear(4096, 1000)
 
+        self.init_weights()
+
+    def init_weights(self):
+        nn.init.normal_(self.conv1.weight, 0, 0.01)
+        nn.init.normal_(self.conv2.weight, 0, 0.01)
+        nn.init.normal_(self.conv3.weight, 0, 0.01)
+        nn.init.normal_(self.conv4.weight, 0, 0.01)
+        nn.init.normal_(self.conv5.weight, 0, 0.01)
+        nn.init.normal_(self.fc1.weight, 0, 0.01)
+        nn.init.normal_(self.fc2.weight, 0, 0.01)
+        nn.init.normal_(self.fc3.weight, 0, 0.01)
+
+        nn.init.constant_(self.conv2.bias, 1)
+        nn.init.constant_(self.conv4.bias, 1)
+        nn.init.constant_(self.conv5.bias, 1)
+        nn.init.constant_(self.fc1.bias, 1)
+        nn.init.constant_(self.fc2.bias, 1)
+        nn.init.constant_(self.fc3.bias, 1)
+
+        nn.init.constant_(self.conv1.bias, 0)
+        nn.init.constant_(self.conv3.bias, 0)
+
     def forward(self, x):
         x = F.relu(self.pool(self.lrn(self.conv1(x))))
         x = F.relu(self.pool(self.lrn(self.conv2(x))))

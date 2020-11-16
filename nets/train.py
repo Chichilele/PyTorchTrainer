@@ -96,11 +96,7 @@ class Trainer:
             n_epochs (int): number of epochs to trained the network on.
 
         Returns:
-            nn.Module: pointer to the trained network.
             dict: dict containing train and test losses.
-
-        .. _PEP 484:
-            https://www.python.org/dev/peps/pep-0484/
 
         """
         self.test_counter = [

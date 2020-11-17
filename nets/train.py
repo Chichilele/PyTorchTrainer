@@ -11,11 +11,12 @@ class Trainer:
         train_loader : training data loader.
         test_loader : test data loader.
         log_interval : interval between each log (both printed and stored for plotting).
+        lr_scheduer : learning rate scheduler
 
     """
 
     def __init__(
-        self, net, optimizer, criterion, train_loader, test_loader, log_interval=100
+        self, net, optimizer, criterion, train_loader, test_loader, log_interval=100, lr_scheduler=None
     ):
         self.net = net
         self.optimizer = optimizer
@@ -23,6 +24,7 @@ class Trainer:
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.log_interval = log_interval
+        self.lr_scheduler = lr_scheduler
 
         self.train_losses = []
         self.train_counter = []
@@ -107,6 +109,7 @@ class Trainer:
         for epoch in range(1, n_epochs + 1):
             self.train_step(epoch)
             self.test()
+            if self.lr_scheduler: self.lr_scheduler.step()
 
         results = {
             "train_loss": (self.train_losses, self.train_counter),

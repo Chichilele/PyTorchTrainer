@@ -68,3 +68,27 @@ class AlexNet(nn.Module):
             num_features *= s
 
         return num_features
+
+
+if __name__ == "__main__":
+    from train import Trainer
+    from torch.optim import SGD
+    from torch.optim.lr_scheduler import StepLR
+
+    BATCH_SIZE = 128
+    MOMENTUM = 0.9
+    WEIGHT_DECAY = 0.0005
+    LEARNING_RATE = 0.001
+    LR_UPDATE = 0.1
+    N_EPOCHS = 90
+
+    network = AlexNet()
+    optimizer = SGD(
+        network.parameters(),
+        lr=LEARNING_RATE,
+        momentum=MOMENTUM,
+        weight_decay=WEIGHT_DECAY,
+    )
+    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+    criterion = nn.CrossEntropyLoss()
+    trainer = Trainer(network, optimizer, criterion, None, None)

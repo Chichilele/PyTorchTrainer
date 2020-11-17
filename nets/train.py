@@ -1,4 +1,6 @@
 import torch
+import mlflow
+import mlflow.pytorch
 
 
 class Trainer:
@@ -11,12 +13,20 @@ class Trainer:
         train_loader : training data loader.
         test_loader : test data loader.
         log_interval : interval between each log (both printed and stored for plotting).
-        lr_scheduer : learning rate scheduler
+        lr_scheduer : learning rate scheduler.
 
     """
 
     def __init__(
-        self, net, optimizer, criterion, train_loader, test_loader, log_interval=100, lr_scheduler=None
+        self,
+        net,
+        optimizer,
+        criterion,
+        train_loader,
+        test_loader,
+        log_interval=100,
+        lr_scheduler=None,
+        modelname=None
     ):
         self.net = net
         self.optimizer = optimizer
@@ -25,6 +35,7 @@ class Trainer:
         self.test_loader = test_loader
         self.log_interval = log_interval
         self.lr_scheduler = lr_scheduler
+        self.modelname = modelname if modelname else "pytorch_model"
 
         self.train_losses = []
         self.train_counter = []
@@ -39,6 +50,9 @@ class Trainer:
 
         """
         self.net.train()
+        dataset_size = len(self.train_loader.dataset)
+
+        cum_loss = 0
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.cuda(), target.cuda()
             self.optimizer.zero_grad()
@@ -46,28 +60,27 @@ class Trainer:
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
+
+            ## log
+            cum_loss += loss.item()
+
             if batch_idx % self.log_interval == 0:
                 img_done = batch_idx * len(data)
-                dataset_size = len(self.train_loader.dataset)
                 percentage_done = 100.0 * batch_idx / len(self.train_loader)
-                print(
-                    f"Train Epoch: {epoch} [{img_done}/{dataset_size} ({percentage_done:.0f}%)]\tLoss: {loss.item():.6f}"
-                )
-
-                self.train_losses.append(loss.item())
+                avg_loss = cum_loss / self.log_interval if batch_idx != 0 else cum_loss
+                log_message = f"Train Epoch: {epoch} [{img_done:5}/{dataset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
+                print(log_message)
+                mlflow.log_metric("train_loss", loss.item())
+                self.train_losses.append(avg_loss)
                 self.train_counter.append(
                     (batch_idx * self.train_loader.batch_size)
                     + ((epoch - 1) * dataset_size)
                 )
-                ## save model
-                torch.save(self.net.state_dict(), "./models/nextjournal_model.pth")
-                torch.save(
-                    self.optimizer.state_dict(),
-                    "./models/nextjournal_self.optimizer.pth",
-                )
+
+                cum_loss = 0
 
     def test(self):
-        """test function evaluating the training set.
+        """Test function evaluating the training set.
 
         logs results to `test_losses` and prints results.
 
@@ -86,10 +99,14 @@ class Trainer:
         test_loss /= len(self.test_loader)
         self.test_losses.append(test_loss)
 
-        accuracy_rate = 100.0 * correct / len(self.test_loader.dataset)
+        accuracy_rate = correct.item() / len(self.test_loader.dataset)
         print(
-            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{len(self.test_loader.dataset)} ({accuracy_rate:.0f}%)\n"
+            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{len(self.test_loader.dataset)} ({100.0 * accuracy_rate:2.0f}%)\n"
         )
+
+        # Log to MLflow
+        mlflow.log_metric("test_loss", test_loss)
+        mlflow.log_metric("test_accuracy", accuracy_rate)
 
     def train(self, n_epochs):
         """Neural network training routine.
@@ -101,19 +118,25 @@ class Trainer:
             dict: dict containing train and test losses.
 
         """
-        self.test_counter = [
-            i * len(self.train_loader.dataset)
-            for i in range(len(self.test_counter) + n_epochs + 1)
-        ]
+        ## init test_counter
+        sample_rate = len(self.train_loader.dataset)
+        length = len(self.test_counter) + n_epochs
+        self.test_counter = [i * sample_rate for i in range(length + 1)]
+
         self.test()
         for epoch in range(1, n_epochs + 1):
             self.train_step(epoch)
             self.test()
-            if self.lr_scheduler: self.lr_scheduler.step()
+            mlflow.pytorch.log_model(self.net, f"{self.modelname}/epochs/{epoch}")
+
+            if self.lr_scheduler:
+                self.lr_scheduler.step()
+
+        mlflow.pytorch.log_model(self.net, self.modelname)
 
         results = {
             "train_loss": (self.train_losses, self.train_counter),
             "test_loss": (self.test_losses, self.test_counter),
         }
 
-        return self.net, results
+        return results

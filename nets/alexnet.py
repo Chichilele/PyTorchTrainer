@@ -74,21 +74,48 @@ if __name__ == "__main__":
     from train import Trainer
     from torch.optim import SGD
     from torch.optim.lr_scheduler import StepLR
+    import mlflow
+    import mlflow.pytorch
 
-    BATCH_SIZE = 128
-    MOMENTUM = 0.9
-    WEIGHT_DECAY = 0.0005
-    LEARNING_RATE = 0.001
-    LR_UPDATE = 0.1
-    N_EPOCHS = 90
+    params = {
+        "BATCH_SIZE": 128,
+        "LEARNING_RATE": 0.001,
+        "MOMENTUM": 0.9,
+        "WEIGHT_DECAY": 0.0005,
+        "LR_UPDATE": 0.1,
+        "N_EPOCHS": 90,
+        "OPTIMIZER": "SGD",
+        "CRITERION": "CrossEntropyLoss"
+    }
 
-    network = AlexNet()
-    optimizer = SGD(
-        network.parameters(),
-        lr=LEARNING_RATE,
-        momentum=MOMENTUM,
-        weight_decay=WEIGHT_DECAY,
-    )
-    scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
-    criterion = nn.CrossEntropyLoss()
-    trainer = Trainer(network, optimizer, criterion, None, None)
+    train_loader = None
+    test_loader = None
+
+    ## MLflow setup
+    mlflow.set_tracking_uri("http://localhost:5001")
+    mlflow.set_experiment("AlexNet-paper")
+
+    with mlflow.start_run():
+        mlflow.log_params(params)
+
+        network = AlexNet().cuda()
+        optimizer = SGD(
+            network.parameters(),
+            lr=params["LEARNING_RATE"],
+            momentum=params["MOMENTUM"],
+            weight_decay=params["WEIGHT_DECAY"],
+        )
+        scheduler = StepLR(optimizer, step_size=30, gamma=params["LR_UPDATE"])
+        criterion = nn.CrossEntropyLoss()
+
+        ## Train
+        trainer = Trainer(
+            network,
+            optimizer,
+            criterion,
+            train_loader,
+            test_loader,
+            lr_scheduler=scheduler,
+        )
+
+        trainer.train(params["N_EPOCHS"])

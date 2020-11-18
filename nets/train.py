@@ -42,6 +42,13 @@ class Trainer:
         self.test_losses = []
         self.test_counter = []
 
+        self._trainset_size = len(self.train_loader.dataset)
+        self._trainloader_size = len(self.train_loader)
+
+        self._testset_size = len(self.test_loader.dataset)
+        self._testloader_size = len(self.test_loader)
+
+
     def train_step(self, epoch):
         """Trains one step (epoch) and logs.
 
@@ -50,7 +57,6 @@ class Trainer:
 
         """
         self.net.train()
-        dataset_size = len(self.train_loader.dataset)
 
         cum_loss = 0
         for batch_idx, (data, target) in enumerate(self.train_loader):
@@ -64,17 +70,17 @@ class Trainer:
             ## log
             cum_loss += loss.item()
 
-            if batch_idx % self.log_interval == 0:
+            if (batch_idx % self.log_interval == 0) or (batch_idx==self._trainloader_size-1):
                 img_done = batch_idx * len(data)
-                percentage_done = 100.0 * batch_idx / len(self.train_loader)
+                percentage_done = 100.0 * batch_idx / self._trainloader_size
                 avg_loss = cum_loss / self.log_interval if batch_idx != 0 else cum_loss
-                log_message = f"Train Epoch: {epoch} [{img_done:5}/{dataset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
+                log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
                 print(log_message)
                 mlflow.log_metric("train_loss", loss.item())
                 self.train_losses.append(avg_loss)
                 self.train_counter.append(
                     (batch_idx * self.train_loader.batch_size)
-                    + ((epoch - 1) * dataset_size)
+                    + ((epoch - 1) * self._trainset_size)
                 )
 
                 cum_loss = 0
@@ -96,12 +102,12 @@ class Trainer:
                 test_loss += self.criterion(output, target).item()
                 pred = output.data.max(1, keepdim=True)[1]
                 correct += pred.eq(target.data.view_as(pred)).sum()
-        test_loss /= len(self.test_loader)
+        test_loss /= self._testloader_size
         self.test_losses.append(test_loss)
 
-        accuracy_rate = correct.item() / len(self.test_loader.dataset)
+        accuracy_rate = correct.item() / self._testset_size
         print(
-            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{len(self.test_loader.dataset)} ({100.0 * accuracy_rate:2.0f}%)\n"
+            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{self._testset_size} ({100.0 * accuracy_rate:2.0f}%)\n"
         )
 
         # Log to MLflow

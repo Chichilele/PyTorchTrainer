@@ -58,7 +58,7 @@ class AlexNet(nn.Module):
         x = self.dropout(x)
         x = F.relu(self.fc2(x))
         x = self.dropout(x)
-        x = F.relu(self.fc3(x))
+        x = self.fc3(x)
         return x
 
     def num_flat_features(self, x):

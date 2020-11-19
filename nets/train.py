@@ -58,7 +58,7 @@ class Trainer:
         """
         self.net.train()
 
-        cum_loss = 0
+        cum_loss = []
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.cuda(), target.cuda()
             self.optimizer.zero_grad()
@@ -73,7 +73,7 @@ class Trainer:
             if (batch_idx % self.log_interval == 0) or (batch_idx==self._trainloader_size-1):
                 img_done = batch_idx * len(data)
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
-                avg_loss = cum_loss / self.log_interval if batch_idx != 0 else cum_loss
+                avg_loss = sum(cum_loss) / len(cum_loss)
                 log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
                 print(log_message)
                 mlflow.log_metric("train_loss", loss.item())
@@ -83,7 +83,7 @@ class Trainer:
                     + ((epoch - 1) * self._trainset_size)
                 )
 
-                cum_loss = 0
+                cum_loss = []
 
     def test(self):
         """Test function evaluating the training set.

@@ -85,6 +85,18 @@ class Trainer:
 
                 cum_loss = []
 
+        img_done = self._trainset_size
+        percentage_done = 100.0
+        avg_loss = sum(cum_loss) / len(cum_loss)
+        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
+        print(log_message)
+        mlflow.log_metric("train_loss", avg_loss)
+        self.train_losses.append(avg_loss)
+        self.train_counter.append(
+            (self._trainloader_size)
+            + ((epoch - 1) * self._trainset_size)
+        )
+
     def test(self):
         """Test function evaluating the training set.
 

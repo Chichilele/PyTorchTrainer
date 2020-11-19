@@ -7,7 +7,7 @@ class AlexNet(nn.Module):
     input size is 256x256x3
     """
 
-    def __init__(self):
+    def __init__(self, n_classes=1000):
         super(AlexNet, self).__init__()
         # NB: 224x224 as per the paper doesn't add up to 55 output
         self.conv1 = nn.Conv2d(3, 96, kernel_size=11, stride=4)  # 227x227 > 55x55
@@ -22,7 +22,7 @@ class AlexNet(nn.Module):
 
         self.fc1 = nn.Linear(6 * 6 * 256, 4096)
         self.fc2 = nn.Linear(4096, 4096)
-        self.fc3 = nn.Linear(4096, 1000)
+        self.fc3 = nn.Linear(4096, n_classes)
 
         self.init_weights()
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     with mlflow.start_run():
         mlflow.log_params(params)
 
-        network = AlexNet().cuda()
+        network = AlexNet(10).cuda()
         optimizer = SGD(
             network.parameters(),
             lr=params["LEARNING_RATE"],

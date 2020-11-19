@@ -33,7 +33,7 @@ class Trainer:
         self.criterion = criterion
         self.train_loader = train_loader
         self.test_loader = test_loader
-        self.log_interval = log_interval if log_interval else len(train_loader)//10
+        self.log_interval = len(train_loader)//log_interval if log_interval else len(train_loader)//10
         self.lr_scheduler = lr_scheduler
         self.modelname = modelname if modelname else "pytorch_model"
 

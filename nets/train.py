@@ -68,15 +68,15 @@ class Trainer:
             self.optimizer.step()
 
             ## log
-            cum_loss += loss.item()
+            cum_loss += [loss.item()]
 
-            if (batch_idx % self.log_interval == 0) or (batch_idx==self._trainloader_size-1):
+            if (batch_idx % self.log_interval == 0):
                 img_done = batch_idx * len(data)
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
                 avg_loss = sum(cum_loss) / len(cum_loss)
                 log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
                 print(log_message)
-                mlflow.log_metric("train_loss", loss.item())
+                mlflow.log_metric("train_loss", avg_loss)
                 self.train_losses.append(avg_loss)
                 self.train_counter.append(
                     (batch_idx * self.train_loader.batch_size)

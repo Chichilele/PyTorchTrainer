@@ -85,7 +85,7 @@ if __name__ == "__main__":
         "LR_UPDATE": 0.1,
         "N_EPOCHS": 90,
         "OPTIMIZER": "SGD",
-        "CRITERION": "CrossEntropyLoss"
+        "CRITERION": "CrossEntropyLoss",
     }
 
     train_loader = None

@@ -4,13 +4,12 @@ from torch.nn import functional as F
 
 class AlexNet(nn.Module):
     """ AlexNet class implements the 2012 AlexNet Architecture
-    input size is 256x256x3
+    input size is 224x224x3
     """
 
     def __init__(self, n_classes=1000):
         super(AlexNet, self).__init__()
-        # NB: 224x224 as per the paper doesn't add up to 55 output
-        self.conv1 = nn.Conv2d(3, 96, kernel_size=11, stride=4)  # 227x227 > 55x55
+        self.conv1 = nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=2)  # 224x224 > 55x55
         self.conv2 = nn.Conv2d(96, 256, kernel_size=5, padding=2)  # 27x27 > 27x27
         self.conv3 = nn.Conv2d(256, 384, kernel_size=3, padding=1)  # 13x13 > 13x13
         self.conv4 = nn.Conv2d(384, 384, kernel_size=3, padding=1)  # 13x13 > 13x13

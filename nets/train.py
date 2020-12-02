@@ -47,6 +47,19 @@ class Trainer:
         self._testset_size = len(self.test_loader.dataset)
         self._testloader_size = len(self.test_loader)
 
+    def log_epoch(self, epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy):
+        avg_loss = sum(cum_loss) / len(cum_loss)
+        avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
+        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
+        print(log_message)
+        mlflow.log_metric("train_loss", avg_loss)
+        mlflow.log_metric("train_accuracy", avg_accuracy)
+        self.train_losses.append(avg_loss)
+        self.train_counter.append(
+            (batch_idx * self.train_loader.batch_size)
+            + ((epoch - 1) * self._trainset_size)
+        )
+
     def train_step(self, epoch):
         """Trains one step (epoch) and logs.
 
@@ -73,33 +86,13 @@ class Trainer:
             if batch_idx % self.log_interval == 0:
                 img_done = batch_idx * len(data)
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
-                avg_loss = sum(cum_loss) / len(cum_loss)
-                avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
-                log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
-                print(log_message)
-                mlflow.log_metric("train_loss", avg_loss)
-                mlflow.log_metric("train_accuracy", avg_accuracy)
-                self.train_losses.append(avg_loss)
-                self.train_counter.append(
-                    (batch_idx * self.train_loader.batch_size)
-                    + ((epoch - 1) * self._trainset_size)
-                )
-
+                self.log_epoch(epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy)
                 cum_loss, cum_accuracy = [], []
         
         ## after end of train loop
         img_done = self._trainset_size
         percentage_done = 100.0
-        avg_loss = sum(cum_loss) / len(cum_loss)
-        avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
-        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
-        print(log_message)
-        mlflow.log_metric("train_loss", avg_loss)
-        mlflow.log_metric("train_accuracy", avg_accuracy)
-        self.train_losses.append(avg_loss)
-        self.train_counter.append(
-            (self._trainloader_size) + ((epoch - 1) * self._trainset_size)
-        )
+        self.log_epoch(epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy)
 
     def test(self):
         """Test function evaluating the training set.

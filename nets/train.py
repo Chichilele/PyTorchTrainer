@@ -54,11 +54,6 @@ class Trainer:
         print(log_message)
         mlflow.log_metric("train_loss", avg_loss)
         mlflow.log_metric("train_accuracy", avg_accuracy)
-        self.train_losses.append(avg_loss)
-        self.train_counter.append(
-            (batch_idx * self.train_loader.batch_size)
-            + ((epoch - 1) * self._trainset_size)
-        )
 
     def train_step(self, epoch):
         """Trains one step (epoch) and logs.

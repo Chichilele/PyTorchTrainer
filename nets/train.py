@@ -87,7 +87,7 @@ class Trainer:
                 img_done = batch_idx * len(data)
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
                 self.log_epoch(epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy)
-                cum_loss, cum_accuracy = [], []
+                cum_loss = []
         
         ## after end of train loop
         img_done = self._trainset_size

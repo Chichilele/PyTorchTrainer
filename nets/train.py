@@ -68,7 +68,7 @@ class Trainer:
             ## log
             cum_loss += [loss.item()]
             pred = output.data.max(1, keepdim=True)[1]
-            cum_accuracy += [pred.eq(target.data.view_as(pred)).sum() / len(target)]
+            cum_accuracy += [pred.eq(target.data.view_as(pred)).sum().item() / len(target)]
 
             if batch_idx % self.log_interval == 0:
                 img_done = batch_idx * len(data)

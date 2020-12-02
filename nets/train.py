@@ -56,7 +56,7 @@ class Trainer:
         """
         self.net.train()
 
-        cum_loss = []
+        cum_loss, cum_accuracy = [], []
         for batch_idx, (data, target) in enumerate(self.train_loader):
             data, target = data.cuda(), target.cuda()
             self.optimizer.zero_grad()
@@ -67,23 +67,39 @@ class Trainer:
 
             ## log
             cum_loss += [loss.item()]
+            pred = output.data.max(1, keepdim=True)[1]
+            cum_accuracy += [pred.eq(target.data.view_as(pred)).sum() / len(target)]
 
             if batch_idx % self.log_interval == 0:
                 img_done = batch_idx * len(data)
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
                 avg_loss = sum(cum_loss) / len(cum_loss)
-                log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
+                avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
+                log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
                 print(log_message)
                 mlflow.log_metric("train_loss", avg_loss)
+                mlflow.log_metric("train_accuracy", avg_accuracy)
+                self.train_losses.append(avg_loss)
+                self.train_counter.append(
+                    (batch_idx * self.train_loader.batch_size)
+                    + ((epoch - 1) * self._trainset_size)
+                )
 
-                cum_loss = []
-
+                cum_loss, cum_accuracy = [], []
+        
+        ## after end of train loop
         img_done = self._trainset_size
         percentage_done = 100.0
         avg_loss = sum(cum_loss) / len(cum_loss)
-        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}"
+        avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
+        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
         print(log_message)
         mlflow.log_metric("train_loss", avg_loss)
+        mlflow.log_metric("train_accuracy", avg_accuracy)
+        self.train_losses.append(avg_loss)
+        self.train_counter.append(
+            (self._trainloader_size) + ((epoch - 1) * self._trainset_size)
+        )
 
     def test(self):
         """Test function evaluating the training set.
@@ -104,14 +120,14 @@ class Trainer:
                 correct += pred.eq(target.data.view_as(pred)).sum()
         test_loss /= self._testloader_size
 
-        accuracy_rate = correct.item() / self._testset_size
+        test_accuracy = correct.item() / self._testset_size
         print(
-            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{self._testset_size} ({100.0 * accuracy_rate:2.0f}%)\n"
+            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{self._testset_size} ({100.0 * test_accuracy:2.0f}%)\n"
         )
 
         # Log to MLflow
         mlflow.log_metric("test_loss", test_loss)
-        mlflow.log_metric("test_accuracy", accuracy_rate)
+        mlflow.log_metric("test_accuracy", test_accuracy)
 
     def train(self, n_epochs):
         """Neural network training routine.

@@ -65,7 +65,7 @@ class Trainer:
         self.net.train()
 
         cum_loss, cum_accuracy = [], []
-        for batch_idx, (data, target) in enumerate(self.train_loader):
+        for batch_idx, (data, target) in enumerate(self.train_loader, 1):
             data, target = data.cuda(), target.cuda()
             self.optimizer.zero_grad()
             output = self.net(data)
@@ -79,15 +79,18 @@ class Trainer:
             cum_accuracy += [pred.eq(target.data.view_as(pred)).sum().item() / len(target)]
 
             if batch_idx % self.log_interval == 0:
-                img_done = batch_idx * len(data)
+                img_done = batch_idx * self.train_loader.batch_size
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
                 self.log_epoch(epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy)
                 cum_loss = []
         
         ## after end of train loop
-        img_done = self._trainset_size
-        percentage_done = 100.0
-        self.log_epoch(epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy)
+        if cum_loss:
+            img_done = self._trainset_size
+            percentage_done = 100.0
+            self.log_epoch(
+                epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy
+            )
 
     def test(self):
         """Test function evaluating the training set.

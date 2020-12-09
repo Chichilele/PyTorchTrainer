@@ -47,13 +47,21 @@ class Trainer:
         self._testset_size = len(self.test_loader.dataset)
         self._testloader_size = len(self.test_loader)
 
-    def log_epoch(self, epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy):
+        self.step = 0
+
+    def log_epoch(
+        self, epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy
+    ):
         avg_loss = sum(cum_loss) / len(cum_loss)
         avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
         log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
         print(log_message)
         mlflow.log_metric("train_loss", avg_loss)
         mlflow.log_metric("train_accuracy", avg_accuracy)
+        mlflow.log_metric("train_loss", avg_loss, step=self.step)
+        mlflow.log_metric("train_accuracy", avg_accuracy, step=self.step)
+
+        self.step += 1
 
     def train_step(self, epoch):
         """Trains one step (epoch) and logs.
@@ -76,14 +84,18 @@ class Trainer:
             ## log
             cum_loss += [loss.item()]
             pred = output.data.max(1, keepdim=True)[1]
-            cum_accuracy += [pred.eq(target.data.view_as(pred)).sum().item() / len(target)]
+            cum_accuracy += [
+                pred.eq(target.data.view_as(pred)).sum().item() / len(target)
+            ]
 
             if batch_idx % self.log_interval == 0:
                 img_done = batch_idx * self.train_loader.batch_size
                 percentage_done = 100.0 * batch_idx / self._trainloader_size
-                self.log_epoch(epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy)
+                self.log_epoch(
+                    epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy
+                )
                 cum_loss = []
-        
+
         ## after end of train loop
         if cum_loss:
             img_done = self._trainset_size
@@ -117,8 +129,8 @@ class Trainer:
         )
 
         # Log to MLflow
-        mlflow.log_metric("test_loss", test_loss)
-        mlflow.log_metric("test_accuracy", test_accuracy)
+        mlflow.log_metric("test_loss", test_loss, step=self.step)
+        mlflow.log_metric("test_accuracy", test_accuracy, step=self.step)
 
     def train(self, n_epochs):
         """Neural network training routine.

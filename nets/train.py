@@ -61,7 +61,6 @@ class Trainer:
         mlflow.log_metric("train_loss", avg_loss, step=self.step)
         mlflow.log_metric("train_accuracy", avg_accuracy, step=self.step)
 
-        self.step += 1
 
     def train_step(self, epoch):
         """Trains one step (epoch) and logs.
@@ -95,6 +94,9 @@ class Trainer:
                     epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy
                 )
                 cum_loss = []
+
+            self.step += 1
+
 
         ## after end of train loop
         if cum_loss:

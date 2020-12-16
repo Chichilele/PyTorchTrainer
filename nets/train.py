@@ -98,13 +98,6 @@ class Trainer:
             self.step += 1
 
 
-        ## after end of train loop
-        if cum_loss:
-            img_done = self._trainset_size
-            percentage_done = 100.0
-            self.log_epoch(
-                epoch, batch_idx, img_done, percentage_done, cum_loss, cum_accuracy
-            )
 
     def test(self):
         """Test function evaluating the training set.

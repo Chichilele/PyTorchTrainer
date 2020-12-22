@@ -54,7 +54,7 @@ class Trainer:
     ):
         avg_loss = sum(cum_loss) / len(cum_loss)
         avg_accuracy = sum(cum_accuracy) / len(cum_accuracy)
-        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.0f}%"
+        log_message = f"Train Epoch: {epoch} [{img_done:5}/{self._trainset_size} ({percentage_done:2.0f}%)]\tLoss: {avg_loss:.6f}\tAccuracy: {100.0 * avg_accuracy:2.1f}%"
         print(log_message)
         mlflow.log_metric("train_loss", avg_loss)
         mlflow.log_metric("train_accuracy", avg_accuracy)
@@ -120,7 +120,7 @@ class Trainer:
 
         test_accuracy = correct.item() / self._testset_size
         print(
-            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{self._testset_size} ({100.0 * test_accuracy:2.0f}%)\n"
+            f"\nTest set: Avg. loss: {test_loss:.4f}, Accuracy: {correct}/{self._testset_size} ({100.0 * test_accuracy:2.1f}%)\n"
         )
 
         # Log to MLflow
